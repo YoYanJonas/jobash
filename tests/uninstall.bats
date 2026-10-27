@@ -54,6 +54,17 @@ teardown() {
   ! grep -q 'JOBASH' "$BASHRC"
 }
 
+@test "uninstall choose accepts comma-separated numbers" {
+  "$INSTALL_SH" --prefix "$PREFIX" --bashrc "$BASHRC" --features count,bak,whichall
+  run bash -c 'printf "2\n1,3\n0\n" | NO_COLOR=1 JOBASH_PREFIX="'"$PREFIX"'" JOBASH_BASHRC="'"$BASHRC"'" "'"$UNINSTALL_SH"'"'
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"bad request"* ]]
+  [ ! -e "$PREFIX/bin/bak" ]
+  [ ! -e "$PREFIX/bin/whichall" ]
+  [ -x "$PREFIX/bin/count" ]
+  grep -qxF '# >>> JOBASH' "$BASHRC"
+}
+
 @test "uninstall interactive warns on bad input then stays open" {
   run bash -c 'printf "9\n8\n7\n0\n" | NO_COLOR=1 "'"$UNINSTALL_SH"'"'
   [ "$status" -eq 0 ]

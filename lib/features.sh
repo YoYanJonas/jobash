@@ -22,8 +22,8 @@ jobash_features_discover() {
   shopt -u nullglob
 
   if ((${#JOBASH_FEATURE_IDS[@]} > 0)); then
-    # shellcheck disable=SC2207
-    IFS=$'\n' JOBASH_FEATURE_IDS=($(printf '%s\n' "${JOBASH_FEATURE_IDS[@]}" | sort))
+    # mapfile keeps caller IFS intact (unlike IFS=... arr=( $(...) ), which leaks).
+    mapfile -t JOBASH_FEATURE_IDS < <(printf '%s\n' "${JOBASH_FEATURE_IDS[@]}" | sort)
   fi
 }
 
