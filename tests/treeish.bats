@@ -6,7 +6,7 @@ setup() {
   setup_tmpdir
   TREEISH_SH="$REPO_ROOT/features/treeish/treeish.sh"
   mkdir -p "$TEST_TMP/a/b" "$TEST_TMP/c"
-  touch "$TEST_TMP/a/x" "$TEST_TMP/a/b/y" "$TEST_TMP/c/z"
+  touch "$TEST_TMP/a/x" "$TEST_TMP/a/b/nested-leaf" "$TEST_TMP/c/z"
 }
 
 teardown() {
@@ -18,13 +18,13 @@ teardown() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"a"* ]]
   [[ "$output" == *"c"* ]]
-  [[ "$output" != *"y"* ]]
+  [[ "$output" != *"nested-leaf"* ]]
 }
 
 @test "treeish deeper depth includes nested files" {
   run "$TREEISH_SH" "$TEST_TMP" 2
   [ "$status" -eq 0 ]
-  [[ "$output" == *"y"* ]] || [[ "$output" == *"b"* ]]
+  [[ "$output" == *"nested-leaf"* ]] || [[ "$output" == *"b"* ]]
 }
 
 @test "treeish errors on missing directory" {
