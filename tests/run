@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Run Jobash Bats suite (vendored bats-core or bats on PATH).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BATS=""
+
+if [[ -x "$ROOT/vendor/bats-core/bin/bats" ]]; then
+  BATS="$ROOT/vendor/bats-core/bin/bats"
+elif command -v bats >/dev/null 2>&1; then
+  BATS="$(command -v bats)"
+else
+  echo "jobash: bats not found. Init submodule: git submodule update --init vendor/bats-core" >&2
+  exit 1
+fi
+
+exec "$BATS" "${@:-$ROOT/tests}"
