@@ -1,49 +1,70 @@
 # Jobash
 
-Personal bash helpers: small commands you install into your shell.
+Personal bash helpers: small commands installed into your shell via `./install.sh`.
 
 ## Layout
 
 | Path | Role |
 |------|------|
-| `bin/` | Command entrypoints put on `PATH` |
-| `lib/` | Shared bash helpers used by features and the installer |
-| `features/` | One directory per feature (script, metadata, example) |
-| `completions/` | Bash completion scripts |
-| `tests/` | Automated tests (Bats / ShellSpec) |
+| `install.sh` | Interactive / flagged installer |
+| `lib/` | Shared helpers (features, bashrc, install) |
+| `features/` | One directory per feature |
+| `bin/` | Reserved for repo-local entrypoints |
+| `completions/` | Bash completions (future) |
+| `tests/` | Bats suite + `./tests/run` |
+| `vendor/bats-core` | bats-core submodule |
 | `docs/` | Extra documentation |
-| `install.sh` | Interactive installer (planned) |
 
-## Usage
+## Feature contract
 
-Once the installer exists:
+Each feature is `features/<id>/`:
 
-```bash
-./install.sh
-```
+| File | Purpose |
+|------|---------|
+| `meta.conf` | `id`, `name`, `description`, `bin`, `script` |
+| `<script>.sh` | Implementation (`chmod +x`) |
+| `example.sh` | Non-destructive demo |
 
-Menu options:
+Discovery: every `features/*/meta.conf` is a feature. First feature: `count`.
 
-- **all** — install every feature
-- **choose** — pick features from a list
-- **example** — pick a feature and see a usage demo
-
-The installer appends a managed `# JOBASH` block to the invoking user's `~/.bashrc` (aliases / `PATH`). Re-running should update that block, not scatter duplicates.
-
-Until then, you can call scripts directly, e.g.:
+## Install
 
 ```bash
-./features/<name>/<script>.sh
+./install.sh                 # menu: all | choose | example | quit
+./install.sh --all
+./install.sh --features count
+./install.sh --example count
+./install.sh --uninstall
 ```
+
+Interactive menus use `0` / `back` to go up a level. After an example demo, the feature list is shown again.
+
+Flags for testing / custom paths:
+
+- `--prefix DIR` — install home (default `~/.jobash`)
+- `--bashrc FILE` — bashrc path (default `~/.bashrc`)
+
+Install copies selected scripts to `$prefix/bin` and upserts a managed block in bashrc:
+
+```bash
+# >>> JOBASH
+export JOBASH_HOME="…"
+export PATH="$JOBASH_HOME/bin:$PATH"
+# <<< JOBASH
+```
+
+Re-runs rewrite that block (no duplicates). `--example` never installs or edits bashrc.
+
+Open a new shell (or `source ~/.bashrc`) after install.
 
 ## Tests
 
 ```bash
-bats tests/
-# or: shellspec
+git submodule update --init vendor/bats-core
+./tests/run
 ```
 
-Installer tests should use a temp `$HOME` / fake `.bashrc`, never the real one.
+Uses temp prefix/bashrc only — never your real home config.
 
 ## License
 
