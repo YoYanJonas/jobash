@@ -79,3 +79,36 @@ jobash_bashrc_has_block() {
   [[ -f "$bashrc" ]] || return 1
   grep -qxF "$JOBASH_BASHRC_BEGIN" "$bashrc"
 }
+
+# Load Jobash env from bashrc into the current shell.
+# Full ~/.bashrc often returns early when non-interactive, so we source the
+# managed JOBASH block directly when present.
+jobash_bashrc_reload() {
+  local bashrc="$1"
+  local tmp in_block=0 line
+
+  [[ -f "$bashrc" ]] || return 0
+
+  if jobash_bashrc_has_block "$bashrc"; then
+    tmp="$(mktemp)"
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      if [[ "$line" == "$JOBASH_BASHRC_BEGIN" ]]; then
+        in_block=1
+        continue
+      fi
+      if [[ "$in_block" -eq 1 ]]; then
+        if [[ "$line" == "$JOBASH_BASHRC_END" ]]; then
+          break
+        fi
+        printf '%s\n' "$line" >>"$tmp"
+      fi
+    done <"$bashrc"
+    # shellcheck disable=SC1090
+    source "$tmp"
+    rm -f "$tmp"
+  else
+    # shellcheck disable=SC1090
+    source "$bashrc" || true
+  fi
+  jobash_info "sourced $bashrc"
+}

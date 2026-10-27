@@ -54,6 +54,7 @@ jobash_install_features() {
   done
   jobash_bashrc_upsert "$bashrc" "$prefix"
   jobash_info "updated $bashrc"
+  jobash_bashrc_reload "$bashrc"
 }
 
 jobash_uninstall() {

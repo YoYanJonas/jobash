@@ -77,6 +77,12 @@ teardown() {
   grep -q '# stamp' "$PREFIX/bin/count"
 }
 
+@test "install sources bashrc Jobash block after install" {
+  run "$INSTALL_SH" --prefix "$PREFIX" --bashrc "$BASHRC" --features count
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"sourced $BASHRC"* ]]
+}
+
 @test "interactive menu warns on bad input then stays open" {
   # 3 bad choices, then quit
   run bash -c 'printf "9\n8\n7\n0\n" | NO_COLOR=1 "'"$INSTALL_SH"'"'
