@@ -55,9 +55,11 @@ teardown() {
   run "$INSTALL_SH" --prefix "$PREFIX" --bashrc "$BASHRC" --features count
   [ "$status" -eq 0 ]
   [ -x "$PREFIX/bin/count" ]
+  [ -x "$PREFIX/bin/jobash" ]
+  # count + core jobash hub
   run "$PREFIX/bin/count" -f "$PREFIX/bin"
   [ "$status" -eq 0 ]
-  [ "$output" = "1" ]
+  [ "$output" = "2" ]
 }
 
 @test "install shell feature copies shell snippet and bashrc sources it" {

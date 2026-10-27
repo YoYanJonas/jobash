@@ -21,9 +21,17 @@ jobash_ui_init() {
 
 JOBASH_UI_LINE='────────────────────────────────────────'
 
+# Optional arg: version string shown next to the brand.
 jobash_ui_header() {
+  local ver="${1:-}"
   printf '%s\n' "${JOBASH_UI_DIM}${JOBASH_UI_LINE}${JOBASH_UI_RESET}"
-  printf '%s%s%s\n' "${JOBASH_UI_BOLD}${JOBASH_UI_CYAN}" "  JOBASH" "${JOBASH_UI_RESET}"
+  if [[ -n "$ver" ]]; then
+    printf '%s%s%s %s%s%s\n' \
+      "${JOBASH_UI_BOLD}${JOBASH_UI_CYAN}" "  JOBASH" "${JOBASH_UI_RESET}" \
+      "${JOBASH_UI_DIM}" "$ver" "${JOBASH_UI_RESET}"
+  else
+    printf '%s%s%s\n' "${JOBASH_UI_BOLD}${JOBASH_UI_CYAN}" "  JOBASH" "${JOBASH_UI_RESET}"
+  fi
   printf '%s%s%s\n' "${JOBASH_UI_DIM}" "  personal bash helpers" "${JOBASH_UI_RESET}"
   printf '%s\n' "${JOBASH_UI_DIM}${JOBASH_UI_LINE}${JOBASH_UI_RESET}"
 }

@@ -11,6 +11,8 @@ source "$ROOT/lib/features.sh"
 source "$ROOT/lib/bashrc.sh"
 # shellcheck source=lib/install.sh
 source "$ROOT/lib/install.sh"
+# shellcheck source=lib/core.sh
+source "$ROOT/lib/core.sh"
 # shellcheck source=lib/ui.sh
 source "$ROOT/lib/ui.sh"
 jobash_ui_init

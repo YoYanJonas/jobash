@@ -52,6 +52,7 @@ jobash_install_features() {
   for id in "$@"; do
     jobash_install_feature "$root" "$prefix" "$id"
   done
+  jobash_install_core "$root" "$prefix"
   jobash_bashrc_upsert "$bashrc" "$prefix"
   jobash_info "updated $bashrc"
   jobash_bashrc_reload "$bashrc"

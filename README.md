@@ -8,9 +8,10 @@ Personal bash helpers: small commands installed into your shell via `./install.s
 |------|------|
 | `install.sh` | Interactive / flagged installer |
 | `uninstall.sh` | Interactive / flagged uninstaller |
-| `lib/` | Shared helpers (features, bashrc, install) |
+| `bin/jobash` | Hub CLI (installed to `~/.jobash/bin/jobash`) |
+| `lib/` | Shared helpers (features, bashrc, install, core) |
 | `features/` | One directory per feature |
-| `bin/` | Reserved for repo-local entrypoints |
+| `bin/` | Core CLI source (`jobash`) |
 | `completions/` | Bash completions (future) |
 | `tests/` | Bats suite + `./tests/run` |
 | `vendor/bats-core` | bats-core submodule |
@@ -61,6 +62,14 @@ export PATH="$JOBASH_HOME/bin:$PATH"
 Re-runs rewrite that block (no duplicates). `--example` never installs or edits bashrc.
 
 Open a new shell (or `source ~/.bashrc`) after install.
+
+Every install also stamps `~/.jobash/VERSION` (from `git describe`) + `SOURCE` (repo path) and installs the `jobash` hub:
+
+```bash
+jobash    # version + menu: installed | install | uninstall | docs | quit
+```
+
+Inner install/uninstall menus return to the hub on `0`. Docs lists all features and can run each `example.sh`.
 
 ## Tests
 

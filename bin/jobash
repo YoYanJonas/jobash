@@ -1,0 +1,225 @@
+#!/usr/bin/env bash
+# Jobash hub: versioned menu for installed / install / uninstall / docs.
+set -euo pipefail
+
+PREFIX="${JOBASH_HOME:-${JOBASH_PREFIX:-$HOME/.jobash}}"
+BASHRC="${JOBASH_BASHRC:-$HOME/.bashrc}"
+
+jobash_hub_die() {
+  printf 'jobash: %s\n' "$*" >&2
+  exit 1
+}
+
+[[ -d "$PREFIX" ]] || jobash_hub_die "not installed (missing $PREFIX) — run ./install.sh from the repo"
+[[ -f "$PREFIX/SOURCE" ]] || jobash_hub_die "missing $PREFIX/SOURCE — re-run ./install.sh"
+SOURCE="$(tr -d '\n' <"$PREFIX/SOURCE")"
+[[ -d "$SOURCE" ]] || jobash_hub_die "source repo missing: $SOURCE — re-run ./install.sh from a checkout"
+[[ -f "$SOURCE/install.sh" ]] || jobash_hub_die "invalid source repo: $SOURCE"
+
+VERSION="unknown"
+if [[ -f "$PREFIX/VERSION" ]]; then
+  VERSION="$(tr -d '\n' <"$PREFIX/VERSION")"
+fi
+
+# shellcheck source=/dev/null
+source "$SOURCE/lib/common.sh"
+# shellcheck source=/dev/null
+source "$SOURCE/lib/features.sh"
+# shellcheck source=/dev/null
+source "$SOURCE/lib/bashrc.sh"
+# shellcheck source=/dev/null
+source "$SOURCE/lib/install.sh"
+# shellcheck source=/dev/null
+source "$SOURCE/lib/core.sh"
+# shellcheck source=/dev/null
+source "$SOURCE/lib/ui.sh"
+jobash_ui_init
+
+ROOT="$SOURCE"
+jobash_features_discover "$ROOT"
+
+jobash_is_back() {
+  case "${1,,}" in
+    0|b|back|q|quit) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+jobash_is_blank() {
+  [[ -z "${1//[[:space:]]/}" ]]
+}
+
+jobash_print_feature_list() {
+  local title="$1" with_desc="${2:-1}"
+  shift 2
+  local -a ids=("$@")
+  local i=1 id meta desc
+
+  printf '%s\n' "${JOBASH_UI_BOLD}${title}${JOBASH_UI_RESET}"
+  jobash_ui_sep
+  if ((${#ids[@]} == 0)); then
+    jobash_ui_warn "none"
+  else
+    for id in "${ids[@]}"; do
+      if [[ "$with_desc" == "1" ]]; then
+        meta="$(jobash_feature_meta_path "$ROOT" "$id")"
+        desc="$(jobash_feature_meta_get "$meta" description 2>/dev/null || true)"
+        jobash_ui_menu_item "$i" "$id" "— ${desc:-}"
+      else
+        jobash_ui_menu_item "$i" "$id"
+      fi
+      i=$((i + 1))
+    done
+  fi
+  jobash_ui_menu_item "0" "back" "— previous menu"
+}
+
+# Resolve against a named id array copied into JOBASH_RESOLVE_IDS.
+# Returns 0 ok, 1 back, 2 invalid. Sets FEATURE_ID.
+jobash_resolve_listed_token() {
+  local token="$1" idx
+  FEATURE_ID=""
+  if jobash_is_back "$token"; then
+    return 1
+  fi
+  if [[ "$token" =~ ^[0-9]+$ ]]; then
+    idx=$((token - 1))
+    if ((idx < 0 || idx >= ${#JOBASH_RESOLVE_IDS[@]})); then
+      return 2
+    fi
+    FEATURE_ID="${JOBASH_RESOLVE_IDS[$idx]}"
+  else
+    local id found=0
+    for id in "${JOBASH_RESOLVE_IDS[@]}"; do
+      if [[ "$id" == "$token" ]]; then
+        found=1
+        break
+      fi
+    done
+    [[ "$found" -eq 1 ]] || return 2
+    FEATURE_ID="$token"
+  fi
+  return 0
+}
+
+jobash_menu_installed() {
+  local sel
+  while true; do
+    jobash_installed_discover "$ROOT" "$PREFIX"
+    echo
+    jobash_print_feature_list "Installed features" 1 "${JOBASH_INSTALLED_IDS[@]}"
+    read -r -p "Enter 0 to go back: " sel
+    if jobash_is_blank "$sel"; then
+      jobash_input_reject
+      continue
+    fi
+    if jobash_is_back "$sel"; then
+      jobash_input_reset_strikes
+      return 0
+    fi
+    jobash_input_reject
+  done
+}
+
+jobash_menu_docs() {
+  local sel rc
+  while true; do
+    jobash_features_discover "$ROOT"
+    JOBASH_RESOLVE_IDS=("${JOBASH_FEATURE_IDS[@]}")
+    echo
+    jobash_print_feature_list "Docs — pick a feature to run its example" 1 "${JOBASH_FEATURE_IDS[@]}"
+    read -r -p "Enter number or id for example, or 0 to go back: " sel
+    if jobash_is_blank "$sel"; then
+      jobash_input_reject
+      continue
+    fi
+    rc=0
+    jobash_resolve_listed_token "$sel" || rc=$?
+    if [[ "$rc" -eq 1 ]]; then
+      jobash_input_reset_strikes
+      return 0
+    fi
+    if [[ "$rc" -eq 2 ]]; then
+      jobash_input_reject
+      continue
+    fi
+    echo
+    jobash_ui_sep
+    jobash_run_example "$ROOT" "$FEATURE_ID"
+    echo
+    jobash_ui_ok "example done — pick another or 0 to go back"
+    jobash_input_reset_strikes
+  done
+}
+
+jobash_run_install_menu() {
+  # Child process: quitting installer returns here.
+  JOBASH_PREFIX="$PREFIX" JOBASH_BASHRC="$BASHRC" bash "$SOURCE/install.sh" || true
+  # Refresh hub meta if install rewrote the prefix.
+  if [[ -f "$PREFIX/VERSION" ]]; then
+    VERSION="$(tr -d '\n' <"$PREFIX/VERSION")"
+  fi
+  if [[ -f "$PREFIX/SOURCE" ]]; then
+    SOURCE="$(tr -d '\n' <"$PREFIX/SOURCE")"
+    ROOT="$SOURCE"
+  fi
+}
+
+jobash_run_uninstall_menu() {
+  JOBASH_PREFIX="$PREFIX" JOBASH_BASHRC="$BASHRC" bash "$SOURCE/uninstall.sh" || true
+  if [[ ! -d "$PREFIX" ]]; then
+    jobash_ui_warn "Jobash was fully removed from this machine"
+    jobash_ui_ok "bye"
+    exit 0
+  fi
+  if [[ -f "$PREFIX/VERSION" ]]; then
+    VERSION="$(tr -d '\n' <"$PREFIX/VERSION")"
+  fi
+}
+
+jobash_hub_main() {
+  local choice
+  jobash_input_reset_strikes
+  while true; do
+    echo
+    jobash_ui_header "$VERSION"
+    echo
+    jobash_ui_menu_item "1" "installed" "— list installed features"
+    jobash_ui_menu_item "2" "install" "— open installer"
+    jobash_ui_menu_item "3" "uninstall" "— open uninstaller"
+    jobash_ui_menu_item "4" "docs" "— feature list + examples"
+    jobash_ui_menu_item "0" "quit" "— exit"
+    echo
+    jobash_ui_hint "Tip: 0 / back returns to the previous menu."
+    read -r -p "Select [0-4]: " choice
+    case "$choice" in
+      1|installed|list)
+        jobash_input_reset_strikes
+        jobash_menu_installed
+        ;;
+      2|install)
+        jobash_input_reset_strikes
+        jobash_run_install_menu
+        jobash_input_reset_strikes
+        ;;
+      3|uninstall)
+        jobash_input_reset_strikes
+        jobash_run_uninstall_menu
+        jobash_input_reset_strikes
+        ;;
+      4|docs|doc)
+        jobash_input_reset_strikes
+        jobash_menu_docs
+        ;;
+      0|q|quit)
+        jobash_ui_ok "bye"
+        exit 0
+        ;;
+      *)
+        jobash_input_reject
+        ;;
+    esac
+  done
+}
+
+jobash_hub_main
