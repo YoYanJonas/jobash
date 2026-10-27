@@ -12,10 +12,9 @@ Personal bash helpers: small commands installed into your shell via `./install.s
 | `lib/` | Shared helpers (features, bashrc, install, core) |
 | `features/` | One directory per feature |
 | `bin/` | Core CLI source (`jobash`) |
-| `completions/` | Bash completions (future) |
+| `completions/` | Bash completion scripts (`<id>.bash`) |
 | `tests/` | Bats suite + `./tests/run` |
 | `vendor/bats-core` | bats-core submodule |
-| `docs/` | Extra documentation |
 
 ## Feature contract
 
@@ -26,6 +25,8 @@ Each feature is `features/<id>/`:
 | `meta.conf` | `id`, `name`, `description`, `bin`, `script` |
 | `<script>.sh` | Implementation (`chmod +x`) |
 | `example.sh` | Non-destructive demo |
+
+Matching completion (optional but expected): `completions/<id>.bash`. Install copies it to `~/.jobash/completions/` and the bashrc block sources those files in interactive shells.
 
 Discovery: every `features/*/meta.conf` is a feature. First feature: `count`.
 
@@ -56,6 +57,7 @@ Install copies selected scripts to `$prefix/bin` and upserts a managed block in 
 # >>> JOBASH
 export JOBASH_HOME="…"
 export PATH="$JOBASH_HOME/bin:$PATH"
+# shell snippets + completions/*.bash sourced here
 # <<< JOBASH
 ```
 

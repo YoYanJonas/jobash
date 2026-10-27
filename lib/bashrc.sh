@@ -17,6 +17,12 @@ if [[ -d "\$JOBASH_HOME/shell" ]]; then
   done
   unset _jobash_shell
 fi
+if [[ -d "\$JOBASH_HOME/completions" ]]; then
+  for _jobash_comp in "\$JOBASH_HOME/completions"/*.bash; do
+    [[ -f "\$_jobash_comp" ]] && . "\$_jobash_comp"
+  done
+  unset _jobash_comp
+fi
 $JOBASH_BASHRC_END
 EOF
 }
