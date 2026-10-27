@@ -29,3 +29,17 @@ setup() {
 @test "count feature validates" {
   jobash_feature_validate "$REPO_ROOT" count
 }
+
+@test "discover finds mktempdir feature" {
+  jobash_features_discover "$REPO_ROOT"
+  local found=0 id
+  for id in "${JOBASH_FEATURE_IDS[@]}"; do
+    [[ "$id" == "mktempdir" ]] && found=1
+  done
+  [ "$found" -eq 1 ]
+}
+
+@test "mktempdir shell feature validates" {
+  jobash_feature_validate "$REPO_ROOT" mktempdir
+  [ "$(jobash_feature_type "$REPO_ROOT/features/mktempdir/meta.conf")" = "shell" ]
+}

@@ -11,6 +11,12 @@ jobash_bashrc_block() {
 $JOBASH_BASHRC_BEGIN
 export JOBASH_HOME="$jobash_home"
 export PATH="\$JOBASH_HOME/bin:\$PATH"
+if [[ -d "\$JOBASH_HOME/shell" ]]; then
+  for _jobash_shell in "\$JOBASH_HOME/shell"/*.sh; do
+    [[ -f "\$_jobash_shell" ]] && . "\$_jobash_shell"
+  done
+  unset _jobash_shell
+fi
 $JOBASH_BASHRC_END
 EOF
 }

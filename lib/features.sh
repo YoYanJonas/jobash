@@ -55,23 +55,40 @@ jobash_feature_meta_get() {
   return 1
 }
 
+jobash_feature_type() {
+  local meta="$1" t
+  t="$(jobash_feature_meta_get "$meta" type 2>/dev/null || true)"
+  printf '%s\n' "${t:-bin}"
+}
+
 jobash_feature_validate() {
   local root="$1" id="$2"
-  local dir meta script_name script_path bin_name
+  local dir meta ftype script_name script_path bin_name
 
   dir="$(jobash_feature_dir "$root" "$id")"
   meta="$(jobash_feature_meta_path "$root" "$id")"
   jobash_require_dir "$dir"
   jobash_require_file "$meta"
-
-  script_name="$(jobash_feature_meta_get "$meta" script)" \
-    || jobash_die "feature $id: missing script= in meta.conf"
-  bin_name="$(jobash_feature_meta_get "$meta" bin)" \
-    || jobash_die "feature $id: missing bin= in meta.conf"
-  script_path="$dir/$script_name"
-  jobash_require_file "$script_path"
-  [[ -x "$script_path" ]] || jobash_die "feature $id: not executable: $script_path"
   [[ -f "$dir/example.sh" ]] || jobash_die "feature $id: missing example.sh"
+
+  ftype="$(jobash_feature_type "$meta")"
+  case "$ftype" in
+    shell)
+      jobash_require_file "$dir/shell.sh"
+      ;;
+    bin)
+      script_name="$(jobash_feature_meta_get "$meta" script)" \
+        || jobash_die "feature $id: missing script= in meta.conf"
+      bin_name="$(jobash_feature_meta_get "$meta" bin)" \
+        || jobash_die "feature $id: missing bin= in meta.conf"
+      script_path="$dir/$script_name"
+      jobash_require_file "$script_path"
+      [[ -x "$script_path" ]] || jobash_die "feature $id: not executable: $script_path"
+      ;;
+    *)
+      jobash_die "feature $id: unknown type=$ftype (use bin or shell)"
+      ;;
+  esac
 }
 
 jobash_feature_exists() {
