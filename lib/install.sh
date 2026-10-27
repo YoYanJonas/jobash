@@ -22,6 +22,10 @@ jobash_install_feature() {
       bin_name="$(jobash_feature_meta_get "$meta" bin)"
       src="$(jobash_feature_dir "$root" "$id")/$script_name"
       dest="$prefix/bin/$bin_name"
+      if [[ -e "$dest" ]]; then
+        jobash_info "skip $id (already installed: $dest)"
+        return 0
+      fi
       cp "$src" "$dest"
       chmod +x "$dest"
       jobash_info "installed $bin_name -> $dest"
@@ -29,6 +33,10 @@ jobash_install_feature() {
     shell)
       src="$(jobash_feature_dir "$root" "$id")/shell.sh"
       dest="$prefix/shell/${id}.sh"
+      if [[ -e "$dest" ]]; then
+        jobash_info "skip $id (already installed: $dest)"
+        return 0
+      fi
       cp "$src" "$dest"
       jobash_info "installed shell $id -> $dest"
       ;;

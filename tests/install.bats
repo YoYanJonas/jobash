@@ -67,3 +67,12 @@ teardown() {
   grep -q 'JOBASH_HOME/shell' "$BASHRC"
   [ ! -e "$PREFIX/bin/mktempdir" ]
 }
+
+@test "install skips features already present under prefix" {
+  "$INSTALL_SH" --prefix "$PREFIX" --bashrc "$BASHRC" --features count
+  printf '\n# stamp\n' >>"$PREFIX/bin/count"
+  run "$INSTALL_SH" --prefix "$PREFIX" --bashrc "$BASHRC" --features count
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"skip count"* ]]
+  grep -q '# stamp' "$PREFIX/bin/count"
+}
