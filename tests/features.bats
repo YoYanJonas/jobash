@@ -43,3 +43,18 @@ setup() {
   jobash_feature_validate "$REPO_ROOT" mktempdir
   [ "$(jobash_feature_type "$REPO_ROOT/features/mktempdir/meta.conf")" = "shell" ]
 }
+
+@test "discover does not leak IFS" {
+  local before after
+  before="$IFS"
+  jobash_features_discover "$REPO_ROOT"
+  after="$IFS"
+  [ "$before" = "$after" ]
+}
+
+@test "split_selection breaks comma-separated numbers" {
+  jobash_split_selection "31,29"
+  [ "${#JOBASH_TOKENS[@]}" -eq 2 ]
+  [ "${JOBASH_TOKENS[0]}" = "31" ]
+  [ "${JOBASH_TOKENS[1]}" = "29" ]
+}

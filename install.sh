@@ -175,8 +175,8 @@ jobash_menu_choose() {
     fi
     FEATURE_SELECTION=()
     local bad=0
-    # shellcheck disable=SC2086
-    for token in ${sel//,/ }; do
+    jobash_split_selection "$sel"
+    for token in "${JOBASH_TOKENS[@]}"; do
       if jobash_is_back "$token"; then
         jobash_input_reset_strikes
         return 0
