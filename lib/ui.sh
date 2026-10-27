@@ -58,3 +58,19 @@ jobash_ui_err() {
 jobash_ui_hint() {
   printf '%s%s%s\n' "${JOBASH_UI_DIM}" "$*" "${JOBASH_UI_RESET}"
 }
+
+# Interactive input strikes: warn up to 3 times, then exit.
+JOBASH_BAD_INPUTS="${JOBASH_BAD_INPUTS:-0}"
+
+jobash_input_reset_strikes() {
+  JOBASH_BAD_INPUTS=0
+}
+
+jobash_input_reject() {
+  JOBASH_BAD_INPUTS=$((JOBASH_BAD_INPUTS + 1))
+  if ((JOBASH_BAD_INPUTS > 3)); then
+    printf '%s\n' "bye, you cant use this app. you cant input properly. so not for you. sorry :))"
+    exit 1
+  fi
+  jobash_ui_err "you need to check options again. bad request!"
+}
