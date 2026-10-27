@@ -30,12 +30,14 @@ Discovery: every `features/*/meta.conf` is a feature. First feature: `count`.
 ## Install
 
 ```bash
-./install.sh                 # menu: all | choose | example
+./install.sh                 # menu: all | choose | example | quit
 ./install.sh --all
 ./install.sh --features count
 ./install.sh --example count
 ./install.sh --uninstall
 ```
+
+Interactive menus use `0` / `back` to go up a level. After an example demo, the feature list is shown again.
 
 Flags for testing / custom paths:
 
