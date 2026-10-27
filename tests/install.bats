@@ -76,3 +76,31 @@ teardown() {
   [[ "$output" == *"skip count"* ]]
   grep -q '# stamp' "$PREFIX/bin/count"
 }
+
+@test "interactive menu warns on bad input then stays open" {
+  # 3 bad choices, then quit
+  run bash -c 'printf "9\n8\n7\n0\n" | NO_COLOR=1 "'"$INSTALL_SH"'"'
+  [ "$status" -eq 0 ]
+  local warns
+  warns="$(grep -c 'check options again. bad request!' <<<"$output" || true)"
+  [ "$warns" -eq 3 ]
+  [[ "$output" == *"[+] bye"* ]] || [[ "$output" == *"bye"* ]]
+}
+
+@test "interactive menu exits after more than three bad inputs" {
+  run bash -c 'printf "9\n9\n9\n9\n" | NO_COLOR=1 "'"$INSTALL_SH"'"'
+  [ "$status" -ne 0 ]
+  local warns
+  warns="$(grep -c 'check options again. bad request!' <<<"$output" || true)"
+  [ "$warns" -eq 3 ]
+  [[ "$output" == *"bye, you cant use this app. you cant input properly. so not for you. sorry :))"* ]]
+}
+
+@test "choose submenu rejects invalid feature ids with strikes" {
+  # enter choose, bad id three times, then back, then quit
+  run bash -c 'printf "2\nnope\nnope\nnope\n0\n0\n" | NO_COLOR=1 "'"$INSTALL_SH"'"'
+  [ "$status" -eq 0 ]
+  local warns
+  warns="$(grep -c 'check options again. bad request!' <<<"$output" || true)"
+  [ "$warns" -eq 3 ]
+}

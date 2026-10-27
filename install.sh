@@ -136,7 +136,8 @@ jobash_print_features() {
   jobash_ui_menu_item "0" "back" "— previous menu"
 }
 
-# Resolve number or id → FEATURE_ID. Returns 1 if back; dies on invalid.
+# Resolve number or id → FEATURE_ID.
+# Returns 0 on ok, 1 on back, 2 on invalid.
 jobash_resolve_feature_token() {
   local token="$1" idx
   FEATURE_ID=""
@@ -145,60 +146,80 @@ jobash_resolve_feature_token() {
   fi
   if [[ "$token" =~ ^[0-9]+$ ]]; then
     idx=$((token - 1))
-    ((idx >= 0 && idx < ${#JOBASH_FEATURE_IDS[@]})) \
-      || jobash_die "invalid selection: $token"
+    if ((idx < 0 || idx >= ${#JOBASH_FEATURE_IDS[@]})); then
+      return 2
+    fi
     FEATURE_ID="${JOBASH_FEATURE_IDS[$idx]}"
   else
-    jobash_feature_exists "$ROOT" "$token" || jobash_die "unknown feature: $token"
+    jobash_feature_exists "$ROOT" "$token" || return 2
     FEATURE_ID="$token"
   fi
   return 0
 }
 
 jobash_menu_choose() {
-  local sel token idx
+  local sel token rc
   while true; do
     echo
     jobash_print_features 1
     read -r -p "Enter numbers or ids (space/comma-separated), or 0 to go back: " sel
     if jobash_is_blank "$sel"; then
-      jobash_ui_warn "no features selected"
+      jobash_input_reject
       continue
     fi
     if jobash_is_back "$sel"; then
+      jobash_input_reset_strikes
       return 0
     fi
     FEATURE_SELECTION=()
+    local bad=0
     # shellcheck disable=SC2086
     for token in ${sel//,/ }; do
       if jobash_is_back "$token"; then
+        jobash_input_reset_strikes
         return 0
       fi
-      if ! jobash_resolve_feature_token "$token"; then
+      rc=0
+      jobash_resolve_feature_token "$token" || rc=$?
+      if [[ "$rc" -eq 2 ]]; then
+        bad=1
+        break
+      fi
+      if [[ "$rc" -eq 1 ]]; then
+        jobash_input_reset_strikes
         return 0
       fi
       FEATURE_SELECTION+=("$FEATURE_ID")
     done
-    if ((${#FEATURE_SELECTION[@]} == 0)); then
-      jobash_ui_warn "no features selected"
+    if [[ "$bad" -eq 1 ]] || ((${#FEATURE_SELECTION[@]} == 0)); then
+      jobash_input_reject
       continue
     fi
+    jobash_input_reset_strikes
     jobash_do_install_selected
     return 0
   done
 }
 
 jobash_menu_example() {
-  local sel
+  local sel rc
   while true; do
     echo
     jobash_print_features 0
     read -r -p "Enter number or id to demo, or 0 to go back: " sel
     if jobash_is_blank "$sel"; then
+      jobash_input_reject
       continue
     fi
-    if ! jobash_resolve_feature_token "$sel"; then
+    rc=0
+    jobash_resolve_feature_token "$sel" || rc=$?
+    if [[ "$rc" -eq 1 ]]; then
+      jobash_input_reset_strikes
       return 0
+    fi
+    if [[ "$rc" -eq 2 ]]; then
+      jobash_input_reject
+      continue
     fi
     echo
     jobash_ui_sep
@@ -206,11 +227,13 @@ jobash_menu_example() {
     jobash_run_example "$ROOT" "$FEATURE_ID"
     echo
     jobash_ui_ok "example done — pick another feature or 0 to go back"
+    jobash_input_reset_strikes
   done
 }
 
 jobash_interactive() {
   local choice
+  jobash_input_reset_strikes
   while true; do
     echo
     jobash_ui_header
@@ -224,13 +247,16 @@ jobash_interactive() {
     read -r -p "Select [0-3]: " choice
     case "$choice" in
       1|all)
+        jobash_input_reset_strikes
         jobash_do_install_all
         jobash_ui_ok "install complete"
         ;;
       2|choose)
+        jobash_input_reset_strikes
         jobash_menu_choose
         ;;
       3|example)
+        jobash_input_reset_strikes
         jobash_menu_example
         ;;
       0|q|quit|b|back)
@@ -238,7 +264,7 @@ jobash_interactive() {
         exit 0
         ;;
       *)
-        jobash_ui_warn "invalid menu choice: $choice"
+        jobash_input_reject
         ;;
     esac
   done
