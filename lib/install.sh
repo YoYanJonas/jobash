@@ -57,33 +57,98 @@ jobash_install_features() {
   jobash_bashrc_reload "$bashrc"
 }
 
+# Print install destination path for a feature (bin or shell snippet).
+jobash_feature_dest() {
+  local root="$1" prefix="$2" id="$3"
+  local meta ftype bin_name
+
+  meta="$(jobash_feature_meta_path "$root" "$id")"
+  ftype="$(jobash_feature_type "$meta")"
+  case "$ftype" in
+    bin)
+      bin_name="$(jobash_feature_meta_get "$meta" bin)" || return 1
+      printf '%s\n' "$prefix/bin/$bin_name"
+      ;;
+    shell)
+      printf '%s\n' "$prefix/shell/${id}.sh"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+jobash_feature_is_installed() {
+  local root="$1" prefix="$2" id="$3"
+  local dest
+  dest="$(jobash_feature_dest "$root" "$prefix" "$id")" || return 1
+  [[ -e "$dest" ]]
+}
+
+# Populate JOBASH_INSTALLED_IDS with feature ids present under prefix.
+jobash_installed_discover() {
+  local root="$1" prefix="$2"
+  local id
+  JOBASH_INSTALLED_IDS=()
+  jobash_features_discover "$root"
+  for id in "${JOBASH_FEATURE_IDS[@]}"; do
+    if jobash_feature_is_installed "$root" "$prefix" "$id"; then
+      JOBASH_INSTALLED_IDS+=("$id")
+    fi
+  done
+}
+
+jobash_uninstall_feature() {
+  local root="$1" prefix="$2" id="$3"
+  local dest
+  dest="$(jobash_feature_dest "$root" "$prefix" "$id")" || return 0
+  if [[ -e "$dest" ]]; then
+    rm -f "$dest"
+    jobash_info "removed $dest"
+  else
+    jobash_info "skip $id (not installed)"
+  fi
+}
+
+# Remove selected features. If none remain installed, drop bashrc block and prefix.
+jobash_uninstall_features() {
+  local root="$1" prefix="$2" bashrc="$3"
+  shift 3
+  local id
+
+  ((${#@} > 0)) || jobash_die "no features selected"
+  for id in "$@"; do
+    jobash_feature_exists "$root" "$id" || jobash_die "unknown feature: $id"
+    jobash_uninstall_feature "$root" "$prefix" "$id"
+  done
+
+  jobash_installed_discover "$root" "$prefix"
+  if ((${#JOBASH_INSTALLED_IDS[@]} == 0)); then
+    jobash_uninstall_wipe_prefix "$prefix" "$bashrc"
+  fi
+}
+
+# Full cleanup: every known feature artifact, bashrc block, and prefix dir.
 jobash_uninstall() {
   local root="$1" prefix="$2" bashrc="$3"
-  local id meta ftype bin_name dest
+  local id
 
   jobash_features_discover "$root"
   for id in "${JOBASH_FEATURE_IDS[@]}"; do
-    meta="$(jobash_feature_meta_path "$root" "$id")"
-    ftype="$(jobash_feature_type "$meta")"
-    case "$ftype" in
-      bin)
-        bin_name="$(jobash_feature_meta_get "$meta" bin)" || continue
-        dest="$prefix/bin/$bin_name"
-        ;;
-      shell)
-        dest="$prefix/shell/${id}.sh"
-        ;;
-      *)
-        continue
-        ;;
-    esac
-    if [[ -e "$dest" ]]; then
-      rm -f "$dest"
-      jobash_info "removed $dest"
-    fi
+    jobash_uninstall_feature "$root" "$prefix" "$id"
   done
+  jobash_uninstall_wipe_prefix "$prefix" "$bashrc"
+}
+
+jobash_uninstall_wipe_prefix() {
+  local prefix="$1" bashrc="$2"
+
   jobash_bashrc_remove "$bashrc"
   jobash_info "removed JOBASH block from $bashrc"
+  if [[ -d "$prefix" ]]; then
+    rm -rf "$prefix"
+    jobash_info "removed $prefix"
+  fi
 }
 
 jobash_run_example() {
