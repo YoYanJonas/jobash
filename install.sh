@@ -27,8 +27,10 @@ Options:
   --example ID          Run a feature example (no install)
   --prefix DIR          Install prefix (default: ~/.jobash)
   --bashrc FILE         bashrc path (default: ~/.bashrc)
-  --uninstall           Remove installed bins + JOBASH bashrc block
+  --uninstall           Full cleanup (same as ./uninstall.sh --all)
   -h, --help            Show this help
+
+See also: ./uninstall.sh for interactive / selective removal.
 EOF
 }
 

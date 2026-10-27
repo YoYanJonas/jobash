@@ -7,6 +7,7 @@ Personal bash helpers: small commands installed into your shell via `./install.s
 | Path | Role |
 |------|------|
 | `install.sh` | Interactive / flagged installer |
+| `uninstall.sh` | Interactive / flagged uninstaller |
 | `lib/` | Shared helpers (features, bashrc, install) |
 | `features/` | One directory per feature |
 | `bin/` | Reserved for repo-local entrypoints |
@@ -34,10 +35,14 @@ Discovery: every `features/*/meta.conf` is a feature. First feature: `count`.
 ./install.sh --all
 ./install.sh --features count
 ./install.sh --example count
-./install.sh --uninstall
+./install.sh --uninstall     # full cleanup (same as uninstall --all)
+
+./uninstall.sh               # menu: all | choose | quit
+./uninstall.sh --all         # wipe bins, shell snippets, bashrc block, prefix
+./uninstall.sh --features count,bak
 ```
 
-Interactive menus use `0` / `back` to go up a level. After an example demo, the feature list is shown again.
+Interactive menus use `0` / `back` to go up a level. After an example demo, the feature list is shown again. `uninstall.sh` choose lists only features currently present under the prefix.
 
 Flags for testing / custom paths:
 
