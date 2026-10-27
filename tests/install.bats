@@ -59,3 +59,11 @@ teardown() {
   [ "$status" -eq 0 ]
   [ "$output" = "1" ]
 }
+
+@test "install shell feature copies shell snippet and bashrc sources it" {
+  run "$INSTALL_SH" --prefix "$PREFIX" --bashrc "$BASHRC" --features mktempdir
+  [ "$status" -eq 0 ]
+  [ -f "$PREFIX/shell/mktempdir.sh" ]
+  grep -q 'JOBASH_HOME/shell' "$BASHRC"
+  [ ! -e "$PREFIX/bin/mktempdir" ]
+}
