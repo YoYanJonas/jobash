@@ -4,7 +4,19 @@
 
 jobash_install_ensure_prefix() {
   local prefix="$1"
-  mkdir -p "$prefix/bin" "$prefix/shell"
+  mkdir -p "$prefix/bin" "$prefix/shell" "$prefix/completions"
+}
+
+jobash_install_completion() {
+  local root="$1" prefix="$2" id="$3"
+  local src dest
+
+  src="$root/completions/${id}.bash"
+  [[ -f "$src" ]] || return 0
+  jobash_install_ensure_prefix "$prefix"
+  dest="$prefix/completions/${id}.bash"
+  cp "$src" "$dest"
+  jobash_info "installed completion $id -> $dest"
 }
 
 jobash_install_feature() {
@@ -24,6 +36,7 @@ jobash_install_feature() {
       dest="$prefix/bin/$bin_name"
       if [[ -e "$dest" ]]; then
         jobash_info "skip $id (already installed: $dest)"
+        jobash_install_completion "$root" "$prefix" "$id"
         return 0
       fi
       cp "$src" "$dest"
@@ -35,12 +48,14 @@ jobash_install_feature() {
       dest="$prefix/shell/${id}.sh"
       if [[ -e "$dest" ]]; then
         jobash_info "skip $id (already installed: $dest)"
+        jobash_install_completion "$root" "$prefix" "$id"
         return 0
       fi
       cp "$src" "$dest"
       jobash_info "installed shell $id -> $dest"
       ;;
   esac
+  jobash_install_completion "$root" "$prefix" "$id"
 }
 
 jobash_install_features() {
@@ -101,13 +116,18 @@ jobash_installed_discover() {
 
 jobash_uninstall_feature() {
   local root="$1" prefix="$2" id="$3"
-  local dest
+  local dest comp
   dest="$(jobash_feature_dest "$root" "$prefix" "$id")" || return 0
   if [[ -e "$dest" ]]; then
     rm -f "$dest"
     jobash_info "removed $dest"
   else
     jobash_info "skip $id (not installed)"
+  fi
+  comp="$prefix/completions/${id}.bash"
+  if [[ -e "$comp" ]]; then
+    rm -f "$comp"
+    jobash_info "removed $comp"
   fi
 }
 

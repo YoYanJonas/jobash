@@ -38,4 +38,5 @@ jobash_install_core() {
   chmod +x "$dest"
   jobash_core_write_meta "$root" "$prefix"
   jobash_info "installed jobash -> $dest"
+  jobash_install_completion "$root" "$prefix" jobash
 }
