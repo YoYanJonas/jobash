@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Terminal UI helpers for the interactive installer.
+# shellcheck shell=bash
+
+jobash_ui_init() {
+  JOBASH_UI_COLOR=0
+  if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
+    JOBASH_UI_COLOR=1
+    JOBASH_UI_RESET=$'\033[0m'
+    JOBASH_UI_BOLD=$'\033[1m'
+    JOBASH_UI_DIM=$'\033[2m'
+    JOBASH_UI_CYAN=$'\033[36m'
+    JOBASH_UI_GREEN=$'\033[32m'
+    JOBASH_UI_YELLOW=$'\033[33m'
+    JOBASH_UI_RED=$'\033[31m'
+  else
+    JOBASH_UI_RESET='' JOBASH_UI_BOLD='' JOBASH_UI_DIM=''
+    JOBASH_UI_CYAN='' JOBASH_UI_GREEN='' JOBASH_UI_YELLOW='' JOBASH_UI_RED=''
+  fi
+}
+
+JOBASH_UI_LINE='────────────────────────────────────────'
+
+jobash_ui_header() {
+  printf '%s\n' "${JOBASH_UI_DIM}${JOBASH_UI_LINE}${JOBASH_UI_RESET}"
+  printf '%s%s%s\n' "${JOBASH_UI_BOLD}${JOBASH_UI_CYAN}" "  JOBASH" "${JOBASH_UI_RESET}"
+  printf '%s%s%s\n' "${JOBASH_UI_DIM}" "  personal bash helpers" "${JOBASH_UI_RESET}"
+  printf '%s\n' "${JOBASH_UI_DIM}${JOBASH_UI_LINE}${JOBASH_UI_RESET}"
+}
+
+jobash_ui_sep() {
+  printf '%s\n' "${JOBASH_UI_DIM}${JOBASH_UI_LINE}${JOBASH_UI_RESET}"
+}
+
+jobash_ui_menu_item() {
+  local num="$1" label="$2" hint="${3:-}"
+  if [[ -n "$hint" ]]; then
+    printf '  %s%2s)%s %-8s %s%s%s\n' \
+      "${JOBASH_UI_BOLD}" "$num" "${JOBASH_UI_RESET}" "$label" \
+      "${JOBASH_UI_DIM}" "$hint" "${JOBASH_UI_RESET}"
+  else
+    printf '  %s%2s)%s %s\n' "${JOBASH_UI_BOLD}" "$num" "${JOBASH_UI_RESET}" "$label"
+  fi
+}
+
+jobash_ui_ok() {
+  printf '%s[+]%s %s\n' "${JOBASH_UI_GREEN}" "${JOBASH_UI_RESET}" "$*"
+}
+
+jobash_ui_warn() {
+  printf '%s[-]%s %s\n' "${JOBASH_UI_YELLOW}" "${JOBASH_UI_RESET}" "$*"
+}
+
+jobash_ui_err() {
+  printf '%s[!]%s %s\n' "${JOBASH_UI_RED}" "${JOBASH_UI_RESET}" "$*" >&2
+}
+
+jobash_ui_hint() {
+  printf '%s%s%s\n' "${JOBASH_UI_DIM}" "$*" "${JOBASH_UI_RESET}"
+}

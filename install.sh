@@ -11,6 +11,9 @@ source "$ROOT/lib/features.sh"
 source "$ROOT/lib/bashrc.sh"
 # shellcheck source=lib/install.sh
 source "$ROOT/lib/install.sh"
+# shellcheck source=lib/ui.sh
+source "$ROOT/lib/ui.sh"
+jobash_ui_init
 
 usage() {
   cat <<'EOF'
@@ -118,18 +121,19 @@ jobash_do_install_selected() {
 
 jobash_print_features() {
   local with_desc="${1:-0}" i=1 id meta desc
-  echo "Available features:"
+  printf '%s\n' "${JOBASH_UI_BOLD}Available features${JOBASH_UI_RESET}"
+  jobash_ui_sep
   for id in "${JOBASH_FEATURE_IDS[@]}"; do
     if [[ "$with_desc" == "1" ]]; then
       meta="$(jobash_feature_meta_path "$ROOT" "$id")"
       desc="$(jobash_feature_meta_get "$meta" description 2>/dev/null || true)"
-      printf '  %d) %s — %s\n' "$i" "$id" "${desc:-}"
+      jobash_ui_menu_item "$i" "$id" "— ${desc:-}"
     else
-      printf '  %d) %s\n' "$i" "$id"
+      jobash_ui_menu_item "$i" "$id"
     fi
     i=$((i + 1))
   done
-  echo "  0) back"
+  jobash_ui_menu_item "0" "back" "— previous menu"
 }
 
 # Resolve number or id → FEATURE_ID. Returns 1 if back; dies on invalid.
@@ -158,7 +162,7 @@ jobash_menu_choose() {
     jobash_print_features 1
     read -r -p "Enter numbers or ids (space/comma-separated), or 0 to go back: " sel
     if jobash_is_blank "$sel"; then
-      jobash_info "no features selected"
+      jobash_ui_warn "no features selected"
       continue
     fi
     if jobash_is_back "$sel"; then
@@ -176,7 +180,7 @@ jobash_menu_choose() {
       FEATURE_SELECTION+=("$FEATURE_ID")
     done
     if ((${#FEATURE_SELECTION[@]} == 0)); then
-      jobash_info "no features selected"
+      jobash_ui_warn "no features selected"
       continue
     fi
     jobash_do_install_selected
@@ -197,10 +201,11 @@ jobash_menu_example() {
       return 0
     fi
     echo
+    jobash_ui_sep
     jobash_features_require_ids "$ROOT" "$FEATURE_ID"
     jobash_run_example "$ROOT" "$FEATURE_ID"
     echo
-    jobash_info "example done — pick another feature or 0 to go back"
+    jobash_ui_ok "example done — pick another feature or 0 to go back"
   done
 }
 
@@ -208,16 +213,19 @@ jobash_interactive() {
   local choice
   while true; do
     echo
-    echo "Jobash installer"
-    echo "  1) all      — install every feature"
-    echo "  2) choose   — pick features"
-    echo "  3) example  — demo a feature (no install)"
-    echo "  0) quit"
+    jobash_ui_header
     echo
+    jobash_ui_menu_item "1" "all" "— install every feature"
+    jobash_ui_menu_item "2" "choose" "— pick features"
+    jobash_ui_menu_item "3" "example" "— demo a feature (no install)"
+    jobash_ui_menu_item "0" "quit" "— exit installer"
+    echo
+    jobash_ui_hint "Tip: 0 / back returns to the previous menu."
     read -r -p "Select [0-3]: " choice
     case "$choice" in
       1|all)
         jobash_do_install_all
+        jobash_ui_ok "install complete"
         ;;
       2|choose)
         jobash_menu_choose
@@ -226,11 +234,11 @@ jobash_interactive() {
         jobash_menu_example
         ;;
       0|q|quit|b|back)
-        jobash_info "bye"
+        jobash_ui_ok "bye"
         exit 0
         ;;
       *)
-        jobash_info "invalid menu choice: $choice"
+        jobash_ui_warn "invalid menu choice: $choice"
         ;;
     esac
   done
